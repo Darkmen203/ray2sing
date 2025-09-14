@@ -50,7 +50,7 @@ var examples = map[string][]string{
 		"wg://server.com:5319?publicKey=verypublicKeyss&privateKey=veryprivatekey&presharedKey=verysharedkey&ip=10.0.0.1&mtu=1380&keepalive=30&udp=1&reserved=0,0,0&ifp=5-10#direct%20WireGuard",
 	},
 	"warp": {
-		"#profile-title: RostovVPN WARP\nwarp://p2@auto#Remote&&detour=warp://p1@auto#Local",
+		"#profile-title: Darkmen203 WARP\nwarp://p2@auto#Remote&&detour=warp://p1@auto#Local",
 		"warp://key@host:1234/#WARPkey",
 		"warp://engage.cloudflareclient.com:2408#WARPnoKey",
 		"warp://key@engage.cloudflareclient.com:2408/?ifp=5-10#WARPparam",
@@ -68,8 +68,7 @@ var examples = map[string][]string{
 		"phttps://a:b@c:80/?path=ssss&sni=d&insecure=1",
 	},
 	"direct": {
-		"direct://?fragment=tlshello,1-2,1-4#Fragment",
-		"xdirect://?fragment=tlshello,1-2,1-4#Fragment",
+		"direct://?fgsize=10-100&fgsleep=100-200",
 	},
 }
 

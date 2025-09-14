@@ -1,7 +1,5 @@
 package ray2sing
 
-//based on https://github.com/XTLS/Xray-core/issues/91
-//todo merge with https://github.com/XTLS/libXray/
 import (
 	"encoding/base64"
 	"fmt"
@@ -17,8 +15,6 @@ import (
 	"strings"
 	"time"
 )
-
-const USER_AGENT string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
 
 type ParserFunc func(string) (*option.Outbound, error)
 
@@ -148,9 +144,6 @@ func getTransportOptions(decoded map[string]string) (*option.V2RayTransportOptio
 	if path == "" {
 		path = decoded["servicename"]
 	}
-	if net == "raw" || net == "" {
-		net = "tcp"
-	}
 	// fmoption.Printf("\n\nheaderType:%s, net:%s, type:%s\n\n", decoded["headerType"], net, decoded["type"])
 	if (decoded["type"] == "http" || decoded["headertype"] == "http") && net == "tcp" {
 		net = "http"
@@ -256,15 +249,12 @@ func getDialerOptions(decoded map[string]string) option.DialerOptions {
 }
 
 func decodeBase64IfNeeded(b64string string) (string, error) {
-	b64string = strings.TrimSpace(b64string)
-
 	padding := len(b64string) % 4
 	b64stringFix := b64string
 	if padding != 0 {
 		b64stringFix += string("===="[:4-padding])
 	}
 	decodedBytes, err := base64.StdEncoding.DecodeString(b64stringFix)
-
 	if err != nil {
 		return b64string, err
 	}
@@ -277,7 +267,7 @@ func toInt(s string) int {
 	return i
 }
 
-func toUInt16(s string, defaultPort uint16) uint16 {
+func toInt16(s string, defaultPort uint16) uint16 {
 	val, err := strconv.ParseInt(s, 10, 17)
 	if err != nil {
 		// fmoption.Printf("err %v", err)
@@ -285,16 +275,6 @@ func toUInt16(s string, defaultPort uint16) uint16 {
 		return defaultPort
 	}
 	return uint16(val)
-}
-
-func toInt16(s string, defaultPort int16) int16 {
-	val, err := strconv.ParseInt(s, 10, 17)
-	if err != nil {
-		// fmoption.Printf("err %v", err)
-		// handle the error appropriately; here we return 0
-		return defaultPort
-	}
-	return int16(val)
 }
 
 func isIPOnly(s string) bool {

@@ -28,7 +28,7 @@ var configTypes = map[string]ParserFunc{
 	"hy2://":       Hysteria2Singbox,
 	"ssh://":       SSHSingbox,
 	"wg://":        WiregaurdSingbox,
-	"wireguard://": WiregaurdSingbox,
+	"wiregaurd://": WiregaurdSingbox,
 	"ssconf://":    BeepassSingbox,
 	"warp://":      WarpSingbox,
 	"direct://":    DirectSingbox,
@@ -49,29 +49,18 @@ var xrayConfigTypes = map[string]ParserFunc{
 	"direct://": DirectXray,
 }
 
-func decodeUrlBase64IfNeeded(config string) string {
-	splt := strings.SplitN(config, "://", 2)
-    if len(splt)<2{
-		//return config   
-	}
-	rest, _ := decodeBase64IfNeeded(splt[1])
-	// fmt.Println(rest, err)
-	return splt[0] + "://" + rest
-}
-
 func processSingleConfig(config string, useXrayWhenPossible bool) (outbound *T.Outbound, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			outbound = nil
 			stackTrace := make([]byte, 1024)
-			s:=runtime.Stack(stackTrace, false)
-			stackStr:=fmt.Sprint(string(stackTrace[:s]))
-			err = E.New("Error in Parsing:", r, "Stack trace:", stackStr)
+			runtime.Stack(stackTrace, false)
+			err = E.New("Error in Parsing:", r, "Stack trace:", stackTrace)
 		}
 	}()
-	configDecoded := decodeUrlBase64IfNeeded(config)
+
 	var configSingbox *T.Outbound
-	if useXrayWhenPossible || strings.Contains(config, "&core=xray") || strings.Contains(configDecoded, "\"xhttp\"") || strings.Contains(config, "type=xhttp") {
+	if strings.Contains(config, "&core=xray") || useXrayWhenPossible {
 		for k, v := range xrayConfigTypes {
 			if strings.HasPrefix(config, k) {
 				configSingbox, err = v(config)
@@ -95,13 +84,12 @@ func processSingleConfig(config string, useXrayWhenPossible bool) (outbound *T.O
 	if configSingbox.Tag == "" {
 		configSingbox.Tag = configSingbox.Type
 	}
-
-	// json.MarshalIndent(configSingbox, "", "  ")
+	json.MarshalIndent(configSingbox, "", "  ")
 	return configSingbox, nil
 }
 func GenerateConfigLite(input string, useXrayWhenPossible bool) (string, error) {
 
-	configArray := strings.Split(strings.ReplaceAll(input, "\r", "\n"), "\n")
+	configArray := strings.Split(strings.ReplaceAll(input, "\r\n", "\n"), "\n")
 
 	var outbounds []T.Outbound
 	counter := 0
@@ -112,14 +100,12 @@ func GenerateConfigLite(input string, useXrayWhenPossible bool) (string, error) 
 		detourTag := ""
 
 		chains := strings.Split(config, "&&detour=")
-		for _, chain1 := range chains {
+		for _, chain := range chains {
 			// fmt.Printf("%s", chain)
-			chain, _ := decodeBase64IfNeeded(chain1)
 			configSingbox, err := processSingleConfig(chain, useXrayWhenPossible)
 
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error in %s \n %v\n", config, err)
-
 				continue
 			}
 			configSingbox.Tag += " § " + strconv.Itoa(counter)
@@ -144,10 +130,6 @@ func GenerateConfigLite(input string, useXrayWhenPossible bool) (string, error) 
 				dialer = &configSingbox.TUICOptions.DialerOptions
 			case C.TypeSSH:
 				dialer = &configSingbox.SSHOptions.DialerOptions
-			case C.TypeShadowsocks:
-				dialer = &configSingbox.ShadowsocksOptions.DialerOptions
-			case C.TypeXray:
-				dialer = &configSingbox.XrayOptions.DialerOptions
 			default:
 				dialer = nil
 			}
@@ -186,11 +168,8 @@ func Ray2Singbox(configs string, useXrayWhenPossible bool) (out string, err erro
 		if r := recover(); r != nil {
 			out = ""
 			stackTrace := make([]byte, 1024)
-			s:=runtime.Stack(stackTrace, false)
-			stackStr:=fmt.Sprint(string(stackTrace[:s]))
-			err = E.New("Error in Parsing", configs, r, "Stack trace:", stackStr)
-			
-			
+			runtime.Stack(stackTrace, false)
+			err = E.New("Error in Parsing", configs, r, "Stack trace:", stackTrace)
 		}
 	}()
 

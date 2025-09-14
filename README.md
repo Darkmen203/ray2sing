@@ -1,6 +1,6 @@
 # ray2sing
 
-Small library to convert v2ray/xray configuration links to sing-box format. Intended for use in [RostovVPN](https://github.com/Darkmen203/RostovVPN).
+Small library to convert v2ray/xray configuration links to sing-box format. Intended for use in [Darkmen203](https://github.com/Darkmen203/RostovVPN).
 
 ## Acknowledgements
 

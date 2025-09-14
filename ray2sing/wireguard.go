@@ -9,41 +9,19 @@ import (
 )
 
 func WiregaurdSingbox(url string) (*T.Outbound, error) {
-	// fmt.Println(url)
 	u, err := ParseUrl(url, 0)
 	if err != nil {
 		return nil, err
 	}
-	fake_packet_count, err := getOneOf(u.Params, "ifp", "wnoisecount")
-	if err != nil {
-		return nil, err
-	}
-	fake_packet_delay, err := getOneOf(u.Params, "ifpd", "wnoisedelay")
-	if err != nil {
-		return nil, err
-	}
-
-	fake_packet_size, err := getOneOf(u.Params, "ifps", "wpayloadsize")
-	if err != nil {
-		return nil, err
-	}
-	fake_packet_mode := u.Params["ifpm"]
-	if wnoise, ok := u.Params["wnoise"]; ok {
-		switch wnoise {
-		case "quic":
-			fake_packet_mode = "m4"
-		}
-	}
-
 	out := &T.Outbound{
 		Type: "wireguard",
 		Tag:  u.Name,
 		WireGuardOptions: T.WireGuardOutboundOptions{
 			ServerOptions:    u.GetServerOption(),
-			FakePackets:      fake_packet_count,
-			FakePacketsSize:  fake_packet_size,
-			FakePacketsDelay: fake_packet_delay,
-			FakePacketsMode:  fake_packet_mode,
+			FakePackets:      u.Params["ifp"],
+			FakePacketsSize:  u.Params["ifps"],
+			FakePacketsDelay: u.Params["ifpd"],
+			FakePacketsMode:  u.Params["ifpm"],
 		},
 	}
 
@@ -83,7 +61,7 @@ func WiregaurdSingbox(url string) (*T.Outbound, error) {
 		}
 	}
 
-	if localAddress, err := getOneOf(u.Params, "localaddress", "ip", "address"); err == nil {
+	if localAddress, err := getOneOf(u.Params, "localaddress", "ip"); err == nil {
 		localAddressParts := strings.Split(localAddress, ",")
 		for _, part := range localAddressParts {
 			if !strings.Contains(part, "/") {
@@ -95,24 +73,6 @@ func WiregaurdSingbox(url string) (*T.Outbound, error) {
 			}
 			out.WireGuardOptions.LocalAddress = append(out.WireGuardOptions.LocalAddress, prefix)
 		}
-	}
-
-	if out.WireGuardOptions.PrivateKey == "" { //it is warp
-		return &T.Outbound{
-			Type: "custom",
-			Tag:  u.Name,
-			CustomOptions: map[string]interface{}{
-				"warp": map[string]interface{}{
-					"key":                u.Username,
-					"host":               out.WireGuardOptions.ServerOptions.Server,
-					"port":               out.WireGuardOptions.ServerOptions.ServerPort,
-					"fake_packets":       out.WireGuardOptions.FakePackets,
-					"fake_packets_size":  out.WireGuardOptions.FakePacketsSize,
-					"fake_packets_delay": out.WireGuardOptions.FakePacketsDelay,
-					"fake_packets_mode":  out.WireGuardOptions.FakePacketsMode,
-				},
-			},
-		}, nil
 	}
 
 	return out, nil
