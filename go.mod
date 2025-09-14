@@ -5,16 +5,17 @@ go 1.24
 toolchain go1.24.1
 
 require (
-	github.com/sagernet/sing v0.5.1
+	github.com/sagernet/sing v0.7.10
 	github.com/sagernet/sing-box v1.8.9
 	github.com/spf13/cobra v1.8.1
-	github.com/xtls/xray-core v0.0.0-00010101000000-000000000000
+	github.com/xtls/xray-core v1.8.21
 )
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/cloudflare/circl v1.6.0 // indirect
 	github.com/dgryski/go-metro v0.0.0-20211217172704-adc40b04c140 // indirect
+	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/pprof v0.0.0-20240528025155-186aa0362fba // indirect
@@ -55,6 +56,6 @@ require (
 	lukechampine.com/blake3 v1.4.0 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/Darkmen203/rostovvpn-sing-box v1.8.9-0.20250310060624-ba3a2276386a
+replace github.com/sagernet/sing-box => github.com/Darkmen203/rostovvpn-sing-box v0.0.0-20250914224847-4c21ea4f6979
 
-replace github.com/xtls/xray-core => github.com/Darkmen203/xray-core v0.0.0-20250309103214-9c37715a67c2
+replace github.com/xtls/xray-core => github.com/Darkmen203/xray-core v0.0.0-20240902024714-0fcb0895bb4b
