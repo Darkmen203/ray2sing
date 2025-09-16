@@ -33,15 +33,11 @@ func convertToStrings(data map[string]interface{}) map[string]string {
 			stringMap[key] = v
 		case float64:
 			stringMap[key] = strconv.Itoa(int(v))
-		// case map[string]interface{}:
-		// 	stringMap[key] = convertToStrings(v)
-
 		default:
 			stringMap[key] = fmt.Sprintf("%v", v)
 		}
 	}
 	return stringMap
-
 }
 
 func VmessSingbox(vmessURL string) (*T.Outbound, error) {
@@ -60,9 +56,7 @@ func VmessSingbox(vmessURL string) (*T.Outbound, error) {
 		security = decoded["scy"]
 	}
 	packetEncoding := decoded["packetEncoding"]
-	if packetEncoding == "" {
-		packetEncoding = "xudp"
-	}
+
 	opts := &T.VMessOutboundOptions{
 		DialerOptions: getDialerOptions(decoded),
 		ServerOptions: T.ServerOptions{

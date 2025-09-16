@@ -11,7 +11,6 @@ func VlessSingbox(vlessURL string) (*T.Outbound, error) {
 		return nil, err
 	}
 	decoded := u.Params
-	// fmt.Printf("Port %v deco=%v", port, decoded)
 	transportOptions, err := getTransportOptions(decoded)
 	if err != nil {
 		return nil, err
@@ -29,15 +28,13 @@ func VlessSingbox(vlessURL string) (*T.Outbound, error) {
 	}
 
 	packetEncoding := decoded["packetencoding"]
-	if packetEncoding == "" {
-		packetEncoding = "xudp"
-	}
+	packetEncodingPtr := &packetEncoding
 
 	opts := &T.VLESSOutboundOptions{
 		DialerOptions:               getDialerOptions(decoded),
 		ServerOptions:               u.GetServerOption(),
 		UUID:                        u.Username,
-		PacketEncoding:              &packetEncoding,
+		PacketEncoding:              packetEncodingPtr,
 		Flow:                        decoded["flow"],
 		OutboundTLSOptionsContainer: tlsOptions,
 		Transport:                   transportOptions,

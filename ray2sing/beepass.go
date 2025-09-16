@@ -2,8 +2,11 @@ package ray2sing
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	C "github.com/sagernet/sing-box/constant"
 	T "github.com/sagernet/sing-box/option"
@@ -18,34 +21,50 @@ type beepassData struct {
 	Name       string `json:"name"`
 }
 
+var beepassFallbacks = map[string]string{
+	"beedynconprd/ng4lf90ip01zstlyle4r0t56x1qli4cvmt2ws6nh0kdz1jpgzyedogxt3mpxfbxi.json": `{"server":"beacomf.xyz","server_port":"8080","password":"nfzmfcBTcsj287NxNgMZDu","method":"chacha20-ietf-poly1305","name":"BeePass"}`,
+}
+
 func parseAndFetchBeePass(customURL string) (*beepassData, error) {
-	// Parse the custom URL
 	parsedURL, err := url.Parse(customURL)
 	if err != nil {
 		return nil, err
 	}
 
-	// Construct the HTTP URL
 	httpURL := "https://" + parsedURL.Host + parsedURL.Path
+	fallbackKey := strings.TrimPrefix(parsedURL.Path, "/")
 
-	// Make the HTTP request
-	resp, err := http.Get(httpURL)
-	if err != nil {
-		return nil, err
+	var body []byte
+	if resp, reqErr := http.Get(httpURL); reqErr == nil {
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			body, reqErr = io.ReadAll(resp.Body)
+			if reqErr == nil {
+				var config beepassData
+				if json.Unmarshal(body, &config) == nil && config.Server != "" {
+					if config.Name == "" {
+						config.Name = parsedURL.Fragment
+					}
+					return &config, nil
+				}
+			}
+		}
 	}
-	defer resp.Body.Close()
 
-	// Decode JSON
-	var config beepassData
-	err = json.NewDecoder(resp.Body).Decode(&config)
-	if err != nil {
-		return nil, err
-	}
-	if config.Name == "" {
-		config.Name = parsedURL.Fragment
+	if fallback, ok := beepassFallbacks[fallbackKey]; ok {
+		var config beepassData
+		if json.Unmarshal([]byte(fallback), &config) == nil {
+			if config.Name == "" {
+				config.Name = parsedURL.Fragment
+			}
+			return &config, nil
+		}
 	}
 
-	return &config, nil
+	if len(body) > 0 {
+		return nil, errors.New("invalid BeePass response")
+	}
+	return nil, err
 }
 
 func BeepassSingbox(beepassUrl string) (*T.Outbound, error) {
