@@ -1,13 +1,12 @@
 package ray2sing
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
 	"testing"
-
-	T "github.com/sagernet/sing-box/option"
 )
 
 func CheckUrlAndJson(url string, expectedJSON string, t *testing.T) {
@@ -32,19 +31,30 @@ func CheckUrlAndJson(url string, expectedJSON string, t *testing.T) {
 	}
 }
 
-func json2map_prettystr(injson string) ([]T.Outbound, string, error) {
-	var conf T.Options
-	if err := conf.UnmarshalJSON([]byte(injson)); err != nil {
-		return conf.Outbounds, "", err
+func json2map_prettystr(injson string) ([]map[string]any, string, error) {
+	if injson == "" {
+		return nil, "", fmt.Errorf("empty input")
 	}
-	if len(conf.Outbounds) == 0 {
-		return conf.Outbounds, "", fmt.Errorf("No outbound")
+	var conf map[string]any
+	if err := json.Unmarshal([]byte(injson), &conf); err != nil {
+		return nil, "", err
 	}
-	pp, err := json.MarshalIndent(conf.Outbounds, "", " ")
-	if err != nil {
-		return conf.Outbounds, "", err
+	rawOutbounds, ok := conf["outbounds"].([]any)
+	if !ok {
+		return nil, "", fmt.Errorf("No outbound")
 	}
-	return conf.Outbounds, string(pp), nil
+	outbounds := make([]map[string]any, 0, len(rawOutbounds))
+	for _, item := range rawOutbounds {
+		if m, ok := item.(map[string]any); ok {
+			outbounds = append(outbounds, m)
+		}
+	}
+
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, []byte(injson), "", " "); err != nil {
+		return outbounds, "", err
+	}
+	return outbounds, pretty.String(), nil
 }
 
 func sortedMarshal(data map[string]interface{}) (string, error) {

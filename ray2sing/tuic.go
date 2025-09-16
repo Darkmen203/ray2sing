@@ -1,7 +1,9 @@
 package ray2sing
 
 import (
+	C "github.com/sagernet/sing-box/constant"
 	T "github.com/sagernet/sing-box/option"
+	badoption "github.com/sagernet/sing/common/json/badoption"
 
 	"time"
 )
@@ -12,43 +14,33 @@ func TuicSingbox(tuicUrl string) (*T.Outbound, error) {
 		return nil, err
 	}
 	decoded := u.Params
+
 	valECH, hasECH := decoded["ech"]
 	hasECH = hasECH && (valECH != "0")
-	var ECHOpts *T.OutboundECHOptions
-	ECHOpts = nil
+	var echOpts *T.OutboundECHOptions
 	if hasECH {
-		ECHOpts = &T.OutboundECHOptions{
-			Enabled: hasECH,
-		}
+		echOpts = &T.OutboundECHOptions{Enabled: true}
 	}
-	turnRelay, err := ParseTurnURL(decoded["relay"])
-	if err != nil {
-		return nil, err
-	}
-	result := T.Outbound{
-		Type: "tuic",
-		Tag:  u.Name,
-		TUICOptions: T.TUICOutboundOptions{
-			ServerOptions:     u.GetServerOption(),
-			UUID:              u.Username,
-			Password:          u.Password,
-			CongestionControl: decoded["congestioncontrol"],
-			UDPRelayMode:      decoded["udprelaymode"],
-			ZeroRTTHandshake:  false,
-			Heartbeat:         T.Duration(10 * time.Second),
-			OutboundTLSOptionsContainer: T.OutboundTLSOptionsContainer{
-				TLS: &T.OutboundTLSOptions{
-					Enabled:    true,
-					DisableSNI: decoded["sni"] == "",
-					ServerName: decoded["sni"],
-					Insecure:   decoded["allowinsecure"] == "1" || decoded["insecure"] == "1",
-					ALPN:       []string{"h3", "spdy/3.1"},
-					ECH:        ECHOpts,
-				},
+
+	opts := &T.TUICOutboundOptions{
+		ServerOptions:     u.GetServerOption(),
+		UUID:              u.Username,
+		Password:          u.Password,
+		CongestionControl: decoded["congestioncontrol"],
+		UDPRelayMode:      decoded["udprelaymode"],
+		ZeroRTTHandshake:  false,
+		Heartbeat:         badoption.Duration(10 * time.Second),
+		OutboundTLSOptionsContainer: T.OutboundTLSOptionsContainer{
+			TLS: &T.OutboundTLSOptions{
+				Enabled:    true,
+				DisableSNI: decoded["sni"] == "",
+				ServerName: decoded["sni"],
+				Insecure:   decoded["allowinsecure"] == "1" || decoded["insecure"] == "1",
+				ALPN:       []string{"h3", "spdy/3.1"},
+				ECH:        echOpts,
 			},
-			TurnRelay: turnRelay,
 		},
 	}
 
-	return &result, nil
+	return newOutbound(C.TypeTUIC, u.Name, opts), nil
 }

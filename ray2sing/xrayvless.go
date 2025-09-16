@@ -10,45 +10,38 @@ func VlessXray(vlessURL string) (*T.Outbound, error) {
 		return nil, err
 	}
 	decoded := u.Params
-	// fmt.Printf("Port %v deco=%v", port, decoded)
+
 	streamSettings, err := getStreamSettingsXray(decoded)
 	if err != nil {
 		return nil, err
 	}
 
-	// packetEncoding := decoded["packetencoding"]
-	// if packetEncoding==""{
-	// 	packetEncoding="xudp"
-	// }
-
-	return &T.Outbound{
-		Tag:  u.Name,
-		Type: "xray",
-		XrayOptions: T.XrayOutboundOptions{
-			// DialerOptions: getDialerOptions(decoded),
-			Fragment: getXrayFragmentOptions(decoded),
-			XrayOutboundJson: &map[string]any{
-
-				"protocol": "vless",
-				"settings": map[string]any{
-					"vnext": []any{
+	xrayConfig := map[string]any{
+		"protocol": "vless",
+		"settings": map[string]any{
+			"vnext": []any{
+				map[string]any{
+					"address": u.Hostname,
+					"port":    u.Port,
+					"users": []any{
 						map[string]any{
-							"address": u.Hostname,
-							"port":    u.Port,
-							"users": []any{
-								map[string]string{
-									"id":         u.Username, // Change to your UUID.
-									"encryption": "none",
-									"flow":       decoded["flow"],
-								},
-							},
+							"id":         u.Username,
+							"encryption": "none",
+							"flow":       decoded["flow"],
 						},
 					},
 				},
-				"tag":            u.Name,
-				"streamSettings": streamSettings,
-				"mux":            getMuxOptionsXray(decoded),
 			},
 		},
-	}, nil
+		"tag":            u.Name,
+		"streamSettings": streamSettings,
+		"mux":            getMuxOptionsXray(decoded),
+	}
+
+	opts := map[string]any{
+		"xray_fragment":     getXrayFragmentOptions(decoded),
+		"xray_outbound_raw": xrayConfig,
+	}
+
+	return newOutbound("xray", u.Name, opts), nil
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
+	C "github.com/sagernet/sing-box/constant"
 	T "github.com/sagernet/sing-box/option"
 )
 
@@ -53,18 +54,14 @@ func BeepassSingbox(beepassUrl string) (*T.Outbound, error) {
 		return nil, err
 	}
 
-	result := T.Outbound{
-		Type: "shadowsocks",
-		Tag:  decoded.Name,
-		ShadowsocksOptions: T.ShadowsocksOutboundOptions{
-			ServerOptions: T.ServerOptions{
-				Server:     decoded.Server,
-				ServerPort: toInt16(decoded.ServerPort, 443),
-			},
-			Method:   decoded.Method,
-			Password: decoded.Password,
+	opts := &T.ShadowsocksOutboundOptions{
+		ServerOptions: T.ServerOptions{
+			Server:     decoded.Server,
+			ServerPort: toInt16(decoded.ServerPort, 443),
 		},
+		Method:   decoded.Method,
+		Password: decoded.Password,
 	}
 
-	return &result, nil
+	return newOutbound(C.TypeShadowsocks, decoded.Name, opts), nil
 }

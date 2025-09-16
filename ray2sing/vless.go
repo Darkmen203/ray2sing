@@ -1,6 +1,7 @@
 package ray2sing
 
 import (
+	C "github.com/sagernet/sing-box/constant"
 	T "github.com/sagernet/sing-box/option"
 )
 
@@ -32,18 +33,15 @@ func VlessSingbox(vlessURL string) (*T.Outbound, error) {
 		packetEncoding = "xudp"
 	}
 
-	return &T.Outbound{
-		Tag:  u.Name,
-		Type: "vless",
-		VLESSOptions: T.VLESSOutboundOptions{
-			DialerOptions:               getDialerOptions(decoded),
-			ServerOptions:               u.GetServerOption(),
-			UUID:                        u.Username,
-			PacketEncoding:              &packetEncoding,
-			Flow:                        decoded["flow"],
-			OutboundTLSOptionsContainer: tlsOptions,
-			Transport:                   transportOptions,
-			Multiplex:                   getMuxOptions(decoded),
-		},
-	}, nil
+	opts := &T.VLESSOutboundOptions{
+		DialerOptions:               getDialerOptions(decoded),
+		ServerOptions:               u.GetServerOption(),
+		UUID:                        u.Username,
+		PacketEncoding:              &packetEncoding,
+		Flow:                        decoded["flow"],
+		OutboundTLSOptionsContainer: tlsOptions,
+		Transport:                   transportOptions,
+		Multiplex:                   getMuxOptions(decoded),
+	}
+	return newOutbound(C.TypeVLESS, u.Name, opts), nil
 }

@@ -1,6 +1,7 @@
 package ray2sing
 
 import (
+	C "github.com/sagernet/sing-box/constant"
 	T "github.com/sagernet/sing-box/option"
 
 	"net/url"
@@ -46,17 +47,13 @@ func ShadowsocksSingbox(shadowsocksUrl string) (*T.Outbound, error) {
 		defaultMethod = u.Username
 	}
 
-	result := T.Outbound{
-		Type: "shadowsocks",
-		Tag:  u.Name,
-		ShadowsocksOptions: T.ShadowsocksOutboundOptions{
-			ServerOptions: u.GetServerOption(),
-			Method:        defaultMethod,
-			Password:      u.Password,
-			Plugin:        decoded["plugin"],
-			PluginOptions: decoded["pluginopts"],
-		},
+	opts := &T.ShadowsocksOutboundOptions{
+		ServerOptions: u.GetServerOption(),
+		Method:        defaultMethod,
+		Password:      u.Password,
+		Plugin:        decoded["plugin"],
+		PluginOptions: decoded["pluginopts"],
 	}
 
-	return &result, nil
+	return newOutbound(C.TypeShadowsocks, u.Name, opts), nil
 }

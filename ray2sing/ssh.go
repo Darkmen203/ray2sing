@@ -1,6 +1,7 @@
 package ray2sing
 
 import (
+	C "github.com/sagernet/sing-box/constant"
 	T "github.com/sagernet/sing-box/option"
 
 	"strings"
@@ -25,16 +26,12 @@ func SSHSingbox(sshURL string) (*T.Outbound, error) {
 
 	hostkeys := strings.Split(decoded["hk"], ",")
 
-	result := T.Outbound{
-		Type: "ssh",
-		Tag:  u.Name,
-		SSHOptions: T.SSHOutboundOptions{
-			ServerOptions: u.GetServerOption(),
-			User:          u.Username,
-			Password:      u.Password,
-			PrivateKey:    privkeys,
-			HostKey:       hostkeys,
-		},
+	opts := &T.SSHOutboundOptions{
+		ServerOptions: u.GetServerOption(),
+		User:          u.Username,
+		Password:      u.Password,
+		PrivateKey:    privkeys,
+		HostKey:       hostkeys,
 	}
-	return &result, nil
+	return newOutbound(C.TypeSSH, u.Name, opts), nil
 }

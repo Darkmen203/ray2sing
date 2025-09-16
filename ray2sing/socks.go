@@ -11,20 +11,16 @@ func SocksSingbox(url string) (*T.Outbound, error) {
 		return nil, err
 	}
 
-	out := &T.Outbound{
-		Type: C.TypeSOCKS,
-		Tag:  u.Name,
-		SocksOptions: T.SocksOutboundOptions{
-			ServerOptions: u.GetServerOption(),
-			Username:      u.Username,
-			Password:      u.Password,
-		},
+	opts := &T.SOCKSOutboundOptions{
+		ServerOptions: u.GetServerOption(),
+		Username:      u.Username,
+		Password:      u.Password,
 	}
 	if version, err := getOneOf(u.Params, "v", "ver", "version"); err == nil {
-		out.SocksOptions.Version = version
+		opts.Version = version
 	}
 	// if net, err := getOneOf(u.Params, "net", "network"); err == nil {
-	// 	out.SocksOptions.Network= net
+	// 	opts.Network= net
 	// }
-	return out, nil
+	return newOutbound(C.TypeSOCKS, u.Name, opts), nil
 }

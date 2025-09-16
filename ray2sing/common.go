@@ -6,14 +6,14 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
+	"time"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	T "github.com/sagernet/sing-box/option"
 	E "github.com/sagernet/sing/common/exceptions"
-
-	"strings"
-	"time"
+	badoption "github.com/sagernet/sing/common/json/badoption"
 )
 
 type ParserFunc func(string) (*option.Outbound, error)
@@ -50,7 +50,9 @@ func getTLSOptions(decoded map[string]string) T.OutboundTLSOptionsContainer {
 		Insecure:   insecure == "true" || insecure == "1",
 		DisableSNI: serverName == "",
 		ECH:        ECHOpts,
-		TLSTricks:  getTricksOptions(decoded),
+	}
+	if decoded["fragment"] != "" || decoded["fgsize"] != "" {
+		tlsOptions.Fragment = true
 	}
 	if fp != "" && !tlsOptions.DisableSNI {
 		tlsOptions.UTLS = &option.OutboundUTLSOptions{
@@ -73,46 +75,6 @@ func getTLSOptions(decoded map[string]string) T.OutboundTLSOptionsContainer {
 
 }
 
-func getTricksOptions(decoded map[string]string) *option.TLSTricksOptions {
-	trick := option.TLSTricksOptions{}
-	if decoded["mc"] == "1" {
-		trick.MixedCaseSNI = true
-	}
-	trick.PaddingMode = decoded["padmode"]
-	trick.PaddingSNI = decoded["padsni"]
-	trick.PaddingSize = decoded["padsize"]
-
-	if !trick.MixedCaseSNI && trick.PaddingMode == "" && trick.PaddingSNI == "" && trick.PaddingSize == "" {
-		return nil
-	}
-	return &trick
-}
-func getFragmentOptions(decoded map[string]string) option.TLSFragmentOptions {
-	trick := option.TLSFragmentOptions{}
-	fragment := decoded["fragment"]
-	if fragment != "" {
-		splt := strings.Split(fragment, ",")
-		if len(splt) > 2 {
-			if splt[0] == "tlshello" {
-				trick.Size = splt[1]
-				trick.Sleep = splt[2]
-			} else {
-				trick.Size = splt[0]
-				trick.Sleep = splt[1]
-			}
-		}
-	} else {
-		trick.Size = decoded["fgsize"]
-		trick.Sleep = decoded["fgsleep"]
-	}
-	if trick.Size != "" {
-		trick.Enabled = true
-	} else {
-		trick.Enabled = false
-	}
-
-	return trick
-}
 func getMuxOptions(decoded map[string]string) *option.OutboundMultiplexOptions {
 	mux := option.OutboundMultiplexOptions{}
 	mux.Protocol = decoded["muxtype"]
@@ -158,7 +120,7 @@ func getTransportOptions(decoded map[string]string) (*option.V2RayTransportOptio
 			transportOptions.HTTPOptions.Method = "GET"
 		}
 		if host != "" {
-			transportOptions.HTTPOptions.Host = option.Listable[string]{host}
+			transportOptions.HTTPOptions.Host = badoption.Listable[string]{host}
 		}
 		httpPath := path
 		if httpPath == "" {
@@ -169,7 +131,7 @@ func getTransportOptions(decoded map[string]string) (*option.V2RayTransportOptio
 		decoded["alpn"] = "http/1.1"
 		transportOptions.Type = C.V2RayTransportTypeHTTPUpgrade
 		if host != "" {
-			transportOptions.HTTPUpgradeOptions.Headers = map[string]option.Listable[string]{"Host": {host}}
+			transportOptions.HTTPUpgradeOptions.Headers = map[string]badoption.Listable[string]{"Host": {host}}
 		}
 		if path != "" {
 			if !strings.HasPrefix(path, "/") {
@@ -198,7 +160,7 @@ func getTransportOptions(decoded map[string]string) (*option.V2RayTransportOptio
 
 		transportOptions.Type = C.V2RayTransportTypeWebsocket
 		if host != "" {
-			transportOptions.WebsocketOptions.Headers = map[string]option.Listable[string]{"Host": {host}}
+			transportOptions.WebsocketOptions.Headers = map[string]badoption.Listable[string]{"Host": {host}}
 		}
 		if path != "" {
 			if !strings.HasPrefix(path, "/") {
@@ -227,8 +189,8 @@ func getTransportOptions(decoded map[string]string) (*option.V2RayTransportOptio
 		transportOptions.Type = C.V2RayTransportTypeGRPC
 		transportOptions.GRPCOptions = option.V2RayGRPCOptions{
 			ServiceName:         path,
-			IdleTimeout:         option.Duration(15 * time.Second),
-			PingTimeout:         option.Duration(15 * time.Second),
+			IdleTimeout:         badoption.Duration(15 * time.Second),
+			PingTimeout:         badoption.Duration(15 * time.Second),
 			PermitWithoutStream: false,
 		}
 	case "quic":
@@ -241,11 +203,7 @@ func getTransportOptions(decoded map[string]string) (*option.V2RayTransportOptio
 	return &transportOptions, nil
 }
 func getDialerOptions(decoded map[string]string) option.DialerOptions {
-	fragment := getFragmentOptions(decoded)
-	return T.DialerOptions{
-		// TCPFastOpen: !fragment.Enabled,
-		TLSFragment: fragment,
-	}
+	return T.DialerOptions{}
 }
 
 func decodeBase64IfNeeded(b64string string) (string, error) {
@@ -288,4 +246,12 @@ func getOneOf(dic map[string]string, headers ...string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("not found")
+}
+
+func newOutbound(typ, tag string, options any) *option.Outbound {
+	return &option.Outbound{
+		Type:    typ,
+		Tag:     tag,
+		Options: options,
+	}
 }

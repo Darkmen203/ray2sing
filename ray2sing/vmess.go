@@ -1,13 +1,13 @@
 package ray2sing
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
+	C "github.com/sagernet/sing-box/constant"
 	T "github.com/sagernet/sing-box/option"
-
-	"encoding/base64"
-	"encoding/json"
 )
 
 func decodeVmess(vmessConfig string) (map[string]string, error) {
@@ -63,24 +63,21 @@ func VmessSingbox(vmessURL string) (*T.Outbound, error) {
 	if packetEncoding == "" {
 		packetEncoding = "xudp"
 	}
-	return &T.Outbound{
-		Tag:  decoded["ps"],
-		Type: "vmess",
-		VMessOptions: T.VMessOutboundOptions{
-			DialerOptions: getDialerOptions(decoded),
-			ServerOptions: T.ServerOptions{
-				Server:     decoded["add"],
-				ServerPort: port,
-			},
-			UUID:                        decoded["id"],
-			Security:                    security,
-			AlterId:                     toInt(decoded["aid"]),
-			GlobalPadding:               false,
-			AuthenticatedLength:         true,
-			PacketEncoding:              packetEncoding,
-			OutboundTLSOptionsContainer: getTLSOptions(decoded),
-			Transport:                   transportOptions,
-			Multiplex:                   getMuxOptions(decoded),
+	opts := &T.VMessOutboundOptions{
+		DialerOptions: getDialerOptions(decoded),
+		ServerOptions: T.ServerOptions{
+			Server:     decoded["add"],
+			ServerPort: port,
 		},
-	}, nil
+		UUID:                        decoded["id"],
+		Security:                    security,
+		AlterId:                     toInt(decoded["aid"]),
+		GlobalPadding:               false,
+		AuthenticatedLength:         true,
+		PacketEncoding:              packetEncoding,
+		OutboundTLSOptionsContainer: getTLSOptions(decoded),
+		Transport:                   transportOptions,
+		Multiplex:                   getMuxOptions(decoded),
+	}
+	return newOutbound(C.TypeVMess, decoded["ps"], opts), nil
 }

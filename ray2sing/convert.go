@@ -1,17 +1,20 @@
 package ray2sing
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"runtime"
-
-	"encoding/json"
 	"strconv"
 	"strings"
 
-	C "github.com/sagernet/sing-box/constant"
+	stdjson "encoding/json"
+
 	T "github.com/sagernet/sing-box/option"
 	E "github.com/sagernet/sing/common/exceptions"
+	jsonc "github.com/sagernet/sing/common/json"
+	"github.com/sagernet/sing/service"
 )
 
 var configTypes = map[string]ParserFunc{
@@ -84,7 +87,6 @@ func processSingleConfig(config string, useXrayWhenPossible bool) (outbound *T.O
 	if configSingbox.Tag == "" {
 		configSingbox.Tag = configSingbox.Type
 	}
-	json.MarshalIndent(configSingbox, "", "  ")
 	return configSingbox, nil
 }
 func GenerateConfigLite(input string, useXrayWhenPossible bool) (string, error) {
@@ -111,33 +113,31 @@ func GenerateConfigLite(input string, useXrayWhenPossible bool) (string, error) 
 			configSingbox.Tag += " § " + strconv.Itoa(counter)
 
 			var dialer *T.DialerOptions
-			switch configSingbox.Type {
-			case C.TypeWireGuard:
-				dialer = &configSingbox.WireGuardOptions.DialerOptions
-			case C.TypeVLESS:
-				dialer = &configSingbox.VLESSOptions.DialerOptions
-			case C.TypeVMess:
-				dialer = &configSingbox.VMessOptions.DialerOptions
-			case C.TypeDirect:
-				dialer = &configSingbox.DirectOptions.DialerOptions
-			case C.TypeTrojan:
-				dialer = &configSingbox.TrojanOptions.DialerOptions
-			case C.TypeHysteria:
-				dialer = &configSingbox.HysteriaOptions.DialerOptions
-			case C.TypeHysteria2:
-				dialer = &configSingbox.Hysteria2Options.DialerOptions
-			case C.TypeTUIC:
-				dialer = &configSingbox.TUICOptions.DialerOptions
-			case C.TypeSSH:
-				dialer = &configSingbox.SSHOptions.DialerOptions
-			default:
-				dialer = nil
+			switch opts := configSingbox.Options.(type) {
+			case *T.LegacyWireGuardOutboundOptions:
+				dialer = &opts.DialerOptions
+			case *T.VLESSOutboundOptions:
+				dialer = &opts.DialerOptions
+			case *T.VMessOutboundOptions:
+				dialer = &opts.DialerOptions
+			case *T.DirectOutboundOptions:
+				dialer = &opts.DialerOptions
+			case *T.TrojanOutboundOptions:
+				dialer = &opts.DialerOptions
+			case *T.HysteriaOutboundOptions:
+				dialer = &opts.DialerOptions
+			case *T.Hysteria2OutboundOptions:
+				dialer = &opts.DialerOptions
+			case *T.TUICOutboundOptions:
+				dialer = &opts.DialerOptions
+			case *T.SSHOutboundOptions:
+				dialer = &opts.DialerOptions
 			}
 			if dialer != nil {
 				dialer.Detour = detourTag
 			}
-			if C.TypeCustom == configSingbox.Type {
-				if warp, ok := configSingbox.CustomOptions["warp"].(map[string]interface{}); ok {
+			if opts, ok := configSingbox.Options.(map[string]interface{}); ok {
+				if warp, ok := opts["warp"].(map[string]interface{}); ok {
 					warp["detour"] = detourTag
 				}
 			}
@@ -156,11 +156,16 @@ func GenerateConfigLite(input string, useXrayWhenPossible bool) (string, error) 
 		Outbounds: outbounds,
 	}
 
-	jsonOutbound, err := json.MarshalIndent(fullConfig, "", "  ")
+	ctx := service.ContextWithDefaultRegistry(context.Background())
+	jsonBytes, err := jsonc.MarshalContext(ctx, fullConfig)
 	if err != nil {
 		return "", err
 	}
-	return string(jsonOutbound), nil
+	var pretty bytes.Buffer
+	if err := stdjson.Indent(&pretty, jsonBytes, "", "  "); err != nil {
+		return "", err
+	}
+	return pretty.String(), nil
 }
 
 func Ray2Singbox(configs string, useXrayWhenPossible bool) (out string, err error) {

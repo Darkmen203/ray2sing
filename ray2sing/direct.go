@@ -11,12 +11,8 @@ func DirectSingbox(url string) (*T.Outbound, error) {
 		return nil, err
 	}
 
-	out := &T.Outbound{
-		Type: C.TypeDirect,
-		Tag:  u.Name,
-		DirectOptions: T.DirectOutboundOptions{
-			DialerOptions: getDialerOptions(u.Params),
-		},
+	opts := &T.DirectOutboundOptions{
+		DialerOptions: getDialerOptions(u.Params),
 	}
-	return out, nil
+	return newOutbound(C.TypeDirect, u.Name, opts), nil
 }

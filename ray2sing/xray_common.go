@@ -2,7 +2,6 @@ package ray2sing
 
 import (
 	E "github.com/sagernet/sing/common/exceptions"
-	"github.com/xtls/xray-core/infra/conf"
 
 	"strings"
 )
@@ -209,18 +208,18 @@ func getStreamSettingsXray(decoded map[string]string) (map[string]any, error) {
 	return res, nil
 }
 
-func getXrayFragmentOptions(decoded map[string]string) *conf.Fragment {
-	trick := conf.Fragment{}
+func getXrayFragmentOptions(decoded map[string]string) map[string]any {
 	fragment := decoded["fragment"]
 	if fragment == "" {
-		return &trick
+		return nil
 	}
 	splt := strings.Split(fragment, ",")
-	if len(splt) > 2 {
-		trick.Packets = splt[0]
-		trick.Length = splt[1]
-		trick.Interval = splt[2]
+	if len(splt) <= 2 {
+		return nil
 	}
-
-	return &trick
+	return map[string]any{
+		"packets":  splt[0],
+		"length":   splt[1],
+		"interval": splt[2],
+	}
 }

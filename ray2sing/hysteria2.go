@@ -1,6 +1,7 @@
 package ray2sing
 
 import (
+	C "github.com/sagernet/sing-box/constant"
 	T "github.com/sagernet/sing-box/option"
 )
 
@@ -33,33 +34,24 @@ func Hysteria2Singbox(hysteria2Url string) (*T.Outbound, error) {
 	if SNI == "" {
 		SNI = decoded["hostname"]
 	}
-	turnRelay, err := u.GetRelayOptions()
-	if err != nil {
-		return nil, err
-	}
 	pass := u.Username
 	if u.Password != "" {
 		pass += ":" + u.Password
 	}
-	result := T.Outbound{
-		Type: "hysteria2",
-		Tag:  u.Name,
-		Hysteria2Options: T.Hysteria2OutboundOptions{
-			ServerOptions: u.GetServerOption(),
-			Obfs:          ObfsOpts,
-			Password:      pass,
-			OutboundTLSOptionsContainer: T.OutboundTLSOptionsContainer{
-				TLS: &T.OutboundTLSOptions{
-					Enabled:    true,
-					Insecure:   decoded["insecure"] == "1",
-					DisableSNI: isIPOnly(SNI),
-					ServerName: SNI,
-					ECH:        ECHOpts,
-				},
+	opts := &T.Hysteria2OutboundOptions{
+		ServerOptions: u.GetServerOption(),
+		Obfs:          ObfsOpts,
+		Password:      pass,
+		OutboundTLSOptionsContainer: T.OutboundTLSOptionsContainer{
+			TLS: &T.OutboundTLSOptions{
+				Enabled:    true,
+				Insecure:   decoded["insecure"] == "1",
+				DisableSNI: isIPOnly(SNI),
+				ServerName: SNI,
+				ECH:        ECHOpts,
 			},
-			TurnRelay: turnRelay,
 		},
 	}
 
-	return &result, nil
+	return newOutbound(C.TypeHysteria2, u.Name, opts), nil
 }
