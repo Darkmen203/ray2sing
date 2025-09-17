@@ -207,6 +207,8 @@ func getDialerOptions(decoded map[string]string) option.DialerOptions {
 }
 
 func decodeBase64IfNeeded(b64string string) (string, error) {
+	b64string = strings.TrimSpace(b64string)
+
 	padding := len(b64string) % 4
 	b64stringFix := b64string
 	if padding != 0 {
